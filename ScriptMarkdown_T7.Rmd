@@ -1,0 +1,289 @@
+> #### **DATOS DE PRESENTACIÓN**
+
+#####  **MAESTRIA EN CIENCIAS EN INFORMÁTICA**
+##### **ALUMNO**    : CARLOS MARTINEZ O.
+##### **MATERIA**   : ALMACENAMIENTO DE DATOS Y SU ADMINISTRACIÓN
+##### **PROFESOR**  : M.EN C. EDUARDO RENÉ RODRÍGUEZ ÁVILA  
+##### **TAREA**     : 7  
+
+> #### **RESUMEN**
+
+EL presente informe tiene como objetivo analizar una década de registros en archivos acerca de las muertes ocasionadas por las Tormentas. Los informes fueron tomados desde el repositorio de la NATIONAL CLIMATIC DATA CENTER, generada por la NATIONA OCEANIC AND ATMOSPHERIC ADMINISTRATION responsable de la conservación, supervisión, evaluación y facilitar el acceso público de la información del clima.
+
+> #### **DESCRIPCIÓN DE LOS DATOS**
+
+Ésta sección describe la información contenida en el archivo consolidado en el periodo de 1 década (2000 al 2010). 
+El archivo contiene la información de las muertes ocurridas a causa de las Tormentas.
+
+
+**fatality_id**      : Número de identificación asignado por la National Weather Service en un evento de tormenta.
+
+**event_id**         : Número de identificación asignado por la NWC para distinguir una parte dentro del evento de tormenta.
+
+**fatality_type**    : Tipo de Deceso (D = Ocasionada directamente por el evento, I = Ocasionada indirectamente por el evento ).
+
+**fatality_date**    : Fecha y hora del evento (Formato: 01/14/2000 12:00:00).
+
+**fatality_age**     : Edad de las víctimas.
+
+**fatality_sex**     : Sexo de las víctimas.
+
+**fatality_location:** Ubicación de las muertes.
+
+
+> #### **OBTENCIÓN DE DATOS**
+
+Ésta sección tiene el objetivo de visualizar el archivo y el tipo de información que contiene.
+
+```{r, echo=FALSE}
+
+DIR_Dat <- "C:/ScriptT6/Datos"
+DIR_Desc <- "C:/ScriptT6/Descargas"
+URL_file <- "http://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/"
+
+# Creamos una Lista con los nombres de los archivos que vamos a utilizar (1 DECADA)
+FILES <- list("StormEvents_fatalities-ftp_v1.0_d2000_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2001_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2002_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2003_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2004_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2005_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2006_c20151230.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2007_c20151120.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2008_c20150826.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2009_c20151120.csv",
+              "StormEvents_fatalities-ftp_v1.0_d2010_c20150826.csv" )
+
+for( file in FILES )
+{
+  # Arma ruta de directorio de Datos
+  DIR_A <- paste(DIR_Dat,"/",file,sep="")
+  
+  # Se valida si el archivo descompactado ya existe en el area de datos.
+  if( !file.exists(DIR_A)) 
+  {
+    # Arma ruta de directorio de Descargas
+    DIR_B <- paste(DIR_Desc,"/",file,".gz",sep="")
+    
+    # Si no existe se busca el archivo compactado en el area de descarga.
+    if( !file.exists(DIR_B) )
+    {    
+      # Arma URL de para la descarga de los archivos
+      URL_A <- paste(URL_file,file,".gz", sep="") 
+      
+      # Descarga de los archivos y los deja el el directorio Descargas
+      download.file(URL_A, destfile = (DIR_B))
+      
+    }
+    # Descomprime los archivos y los deja el directorio Datos
+    gunzip(DIR_B,destname=DIR_A,remove = FALSE)
+
+  }  
+}
+
+# Establece un directorio para la lectura de los archivos
+setwd("C:/ScriptT6/Datos") 
+
+# Se elimina frame del consolidado de archivos en caso de que exista 
+if (exists("Fatalities"))
+{
+  rm(Fatalities)
+}
+
+for( file in FILES )
+{
+  if( !exists("Fatalities" ) ) 
+  {
+    Fatalities <- read.csv( file = file, header=TRUE, sep=",", na.strings="")
+    summary(Fatalities)
+    
+  }
+  else 
+  {
+    data<-read.csv(file = file, header=TRUE, sep=",", na.strings="")
+    Fatalities <- rbind(Fatalities,data)
+ 
+  }
+}
+```
+
+
+**Obtención de las dimensiones del archivo**
+```{r, echo = FALSE}
+cat ("REGISTROS TOTALES: ",nrow(Fatalities),"\n","COLUMNAS TOTALES : ",ncol(Fatalities))
+
+```
+
+**Obtención de las columnas del archivo**
+```{r, echo = FALSE}
+names(Fatalities)
+
+```
+
+**Obtención del resumen del archivo**
+```{r, echo = FALSE}
+summary(Fatalities)
+
+```
+
+
+> #### **ANÁLISIS DE DATOS**
+Ésta seccion analiza los datos del archivo para detectar datos importantes y datos anómalos de cada columna.
+
+**Análisis de los datos de la columna EDAD**
+
+**- _Obtenemos un Resumen de "EDAD"_**
+```{r, echo = FALSE}
+# Apartamos los valores de la columna en una variable para trabajar solo con estos valores
+Edad <- Fatalities[,8]
+
+# Obtenemos el resumen de la columna EDAD
+summary(Edad)
+
+```
+
+**- _Obtenemos la Media de los valores perdidos (NA's) de "EDAD"_**
+```{r, echo = FALSE}
+# Obtenemos la media de los valores perdidos
+mean(is.na(Edad))
+cat("La proporcion de valores perdidos (NA's) de la columna EDAD es relativamente baja")
+
+```
+
+  **- _Graficamos los valores de "EDAD" (Gráfica de caja)_**
+```{r, echo = FALSE}
+# Dibujamos una Gráfica de caja de EDAD para ver la simetría de la distribución de los valores 
+boxplot(Edad, col="yellow", main = "GRÁFICA DE CAJA DE 'EDAD'")
+
+```
+
+**Análisis de los datos de la columna SEXO**
+
+**- _Obtenemos un Resumen de "SEXO"_**
+```{r, echo = FALSE}
+# Apartamos los valores de la columna en una variable para trabajar solo con estos valores
+Sexo <- Fatalities[,9]
+
+# Obtenemos el resumen de la columna SEXO
+summary(Sexo)
+
+```
+
+**- _Obtenemos la Media de los valores perdidos (NA's) de "SEXO"_**
+```{r, echo = FALSE}
+# Obtenemos la media de los valores perdidos
+mean(is.na(Sexo))
+cat("La proporcion de valores perdidos (NA's) de la columna SEXO es relativamente baja")
+
+```
+
+
+**Análisis de los datos de la columna LOCALIDAD**
+
+**- _Obtenemos un Resumen de "LOCALIDAD"_**
+```{r, echo = FALSE}
+# Apartamos los valores de la columna en una variable para trabajar solo con estos valores
+Localidad <- Fatalities[,10]
+
+# Obtenemos el resumen de la columna LOCALIDAD
+summary(Localidad)
+cat("Como observamos no hay valores perdidos (NA's) de la columna LOCALIDAD")
+
+
+```
+
+
+**Análisis de los datos de la columna DIA**
+
+**- _Obtenemos un Resumen de "DIA"_**
+```{r, echo = FALSE}
+# Apartamos los valores de la columna en una variable para trabajar solo con estos valores
+Dia <- Fatalities[,2]
+
+# Obtenemos el resumen de la columna DIA
+summary(Dia)
+cat("Como observamos no hay valores perdidos (NA's) de la columna DIA")
+
+```
+
+
+  **- _Graficamos los valores de "DIA" (Gráfica de caja)_**
+```{r, echo = FALSE}
+# Dibujamos una Gráfica de caja de DIA para ver la simetría de la distribución de los valores 
+boxplot(Dia, col="yellow", main = "GRÁFICA DE CAJA DE 'DIA'")
+
+```
+
+**Análisis de los datos de la columna AÑO-MES**
+
+**- _Separamos el Mes y el Año de la columna AÑO-MES**
+
+**- _Obtenemos un Resumen de "AÑO"_**
+```{r, echo = FALSE}
+
+# Apartamos los valores de la columna en una variable para trabajar solo con estos valores
+Fecha_AM <- Fatalities[,1]
+
+# Separamos el año
+
+Fecha_A <- as.integer(substr(Fecha_AM, 1, 4))
+
+# Obtenemos el resumen de la columna AÑO
+summary(Fecha_A)
+cat("Como observamos no hay valores perdidos (NA's) de la columna AÑO")
+
+```
+
+
+  **- _Graficamos los valores de "AÑO" (Gráfica de caja)_**
+```{r, echo = FALSE}
+# Dibujamos una Gráfica de caja de DIA para ver la simetría de la distribución de los valores 
+boxplot(Fecha_A, col="yellow", main = "GRÁFICA DE CAJA DE 'AÑO'")
+
+```
+
+
+> #### **RESULTADO DE LOS DATOS**
+
+Ésta sección vamosrevisar los datos resultantes  de las extracciones que reaizamos en las secciones anteriores.
+
+  **- _HISTOGRAMA DE LOS EDADES DE LAS VÍCTIMAS_**
+```{r, echo = FALSE}
+# Relizamos el histograma
+hist(Edad,xlab ="Edades", main = "HISTOGRAMA DE LAS EDADES DE LAS VÍCTIMAS", col ="orange")
+```
+
+Como resultado observamos que el mayor rango de edad donde ocurren las decesos están entre los 40 y 60 años 
+
+  **- _HISTOGRAMA DE LOS DIAS DE LOS TORMENTAS_**
+```{r, echo = FALSE}
+# Relizamos el histogramA
+hist(Dia,xlab ="Dias", main = "HISTOGRAMA DE LAS DIAS EN QUE OCURREN LAS TORMENTAS", col ="green")
+```
+
+Como resultado observamos que lo dias donde ocurren las Tormentas están entre los días 26 y 28 de cada mes, nos podemos dar cuenta que es muy notable y frecuente los eventos en estos días. 
+
+
+> #### **CONCLUSIONES**
+
+EL lenguaje de programación R nos ofrece una gran cantidad de herramientas para automatizar nuestro análisis exploratorio de datos. En mi caso, ya que actualmente estoy empezando a desarrollar mi tema de tesis, me encuentro en el punto de que puedo obtener información, archivos y bases de datos gratuitas de repositorios de internet, pero que simple vista es mucha información y no se que podría servirme y que no. En ésta práctica podemos realizar procesos para visualizar en un panorama general la información de aquellos archivos, poder detectar rápidamente cuáles de ellos contienen información en un primer plano se encuentra completa, por ejemplo en esta práctica vimos rápidamente aquellos campos que tenías datos perdidos. Además R ofrece la facilidad de que nuestros procesos se ejecuten automáticamente y se presenten en archivos finales como word, pdf y a través de un explorador web, ésto nos ahorra tiempo en el diseño y nos ayuda en las presentaciones y avances de nuestros trabajos e investigaciones.
+
+
+> #### **BIBLIOGRAFÍA**
+
+[1] R MARKDOWN,Reference guide. 
+[Online]. Available: https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf
+[Accessed: 11-Ene-2016].
+
+[2] R MARKDOWN,Reference guide. 
+[Online]. Available: https://www.rstudio.com/wp-content/uploads/2015/03/rmarkdown-reference.pdf
+[Accessed: 11-Ene-2016].
+
+[3] Markdown & Pygments Lexers Cheat Sheet. 
+[Online]. Available: http://joedicastro.com/pages/markdown.html#mark4
+[Accessed: 11-ENE-2016].
+
+[4] RUG Barcelona. 
+[Online]. Available: https://rugbcn.wordpress.com/2012/10/08/963/
+[Accessed: 11-Ene-2016].
+
